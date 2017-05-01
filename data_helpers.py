@@ -34,9 +34,9 @@ def load_data_and_labels(positive_data_file, negative_data_file):
     把正向文本和负向文本，分别生成对应的标签
     """
     # Load data from files
-    positive_examples = list(open(positive_data_file, "r",encoding="utf8").readlines())
+    positive_examples = list(open(positive_data_file, "r", encoding="utf8").readlines())
     positive_examples = [s.strip() for s in positive_examples]
-    negative_examples = list(open(negative_data_file, "r",encoding="utf8").readlines())
+    negative_examples = list(open(negative_data_file, "r", encoding="utf8").readlines())
     negative_examples = [s.strip() for s in negative_examples]
     # Split by words
     x_text = positive_examples + negative_examples
@@ -67,7 +67,4 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
             start_index = batch_num * batch_size
             end_index = min((batch_num + 1) * batch_size, data_size)
             yield shuffled_data[start_index:end_index]
-
-
-print(load_data_and_labels("./data/my/testdata.txt","./data/my/testdata2.txt"))
-
+            # print(load_data_and_labels("./data/my/testdata.txt","./data/my/testdata2.txt"))
