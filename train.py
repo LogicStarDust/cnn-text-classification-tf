@@ -14,8 +14,8 @@ from tensorflow.contrib import learn
 
 # Data loading params 数据加载参数
 tf.flags.DEFINE_float("dev_sample_percentage", .1, "P比例的训练数据用于验证")
-tf.flags.DEFINE_string("positive_data_file", "./data/rt-polaritydata/rt-polarity.pos", "积极的数据的数据源.")
-tf.flags.DEFINE_string("negative_data_file", "./data/rt-polaritydata/rt-polarity.neg", "负面数据的数据源.")
+tf.flags.DEFINE_string("positive_data_file", "./data/rt-polaritydata-chinese/rt-polarity.pos", "积极的数据的数据源.")
+tf.flags.DEFINE_string("negative_data_file", "./data/rt-polaritydata-chinese/rt-polarity.neg", "负面数据的数据源.")
 
 # Model Hyperparameters 模型参数
 tf.flags.DEFINE_integer("embedding_dim", 128, "字符嵌入维数. Dimensionality of character embedding (default: 128).")
