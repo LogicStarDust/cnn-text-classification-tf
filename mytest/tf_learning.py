@@ -1,4 +1,5 @@
 import os
+
 import tensorflow as tf
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -17,6 +18,8 @@ print(sess.run(y, feed_dict={x: [
     [0.1, 0.4],
     [0.5, 0.8]
 ]}))
+
+var = tf.contrib.layers.sparse_column_with_keys(column_name="gender", keys=["female", "male"])
 
 writer = tf.summary.FileWriter("d://65749/Documents/tf/log", sess.graph)
 
