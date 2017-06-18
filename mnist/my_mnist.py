@@ -15,7 +15,7 @@ BATCH_SIZE = 100  # 一个训练batch中数据个数
 LEARNING_RATE_BASE = 0.8  # 基础学习率
 LEARNING_RATE_DECAY = 0.99  # 学习率的衰减率
 REGULARIZATION_RATE = 0.0001  # 描述模型复杂度的正则化项在损失函数中的系数
-TRAINING_STEPS = 30000  # 训练的轮数
+TRAINING_STEPS = 3000  # 训练的轮数
 MOVING_AVERAGE_DECAY = 0.99  # 滑动平均衰减率
 
 
@@ -66,6 +66,9 @@ def train(mnist):
     average_y = inference(x, variable_averages, weights1, biases1, weights2, biases2)
 
     # 计算交叉熵，作为刻画真实值和预测值之间的差距的损失函数
+    print(y)
+    print(y_)
+    print(tf.argmax(y_, 1))
     cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits=y, labels=tf.argmax(y_, 1))
 
     # 计算在当前batch中所有样例交叉熵平均值
