@@ -80,7 +80,7 @@ def maybe_download(train_data, test_data):
     return train_file_name, test_file_name
 
 
-# 建立估计量
+# 建立模型
 def build_estimator(model_dir, model_type):
     """Build an estimator."""
     # Sparse base columns.基础稀疏列
@@ -186,18 +186,23 @@ def input_fn(df):
             values=df[k].values,
             dense_shape=[df[k].size, 1])
         for k in CATEGORICAL_COLUMNS}
-    # Merges the two dictionaries into one.
+    # Merges the two dictionaries into
+    # 合并两个列
     feature_cols = dict(continuous_cols)
     feature_cols.update(categorical_cols)
     # Converts the label column into a constant Tensor.
+    # 转换原始数据成label
     label = tf.constant(df[LABEL_COLUMN].values)
     # Returns the feature columns and the label.
+    # 返回特征列名和label
     return feature_cols, label
 
 
 def train_and_eval(model_dir, model_type, train_steps, train_data, test_data):
     """Train and evaluate the model."""
+    # 获取训练和测试数据文件
     train_file_name, test_file_name = maybe_download(train_data, test_data)
+    # 读取训练和测试数据
     df_train = pd.read_csv(
         tf.gfile.Open(train_file_name),
         names=COLUMNS,
@@ -211,19 +216,23 @@ def train_and_eval(model_dir, model_type, train_steps, train_data, test_data):
         engine="python")
 
     # remove NaN elements
+    # 移除NaN的元素
     df_train = df_train.dropna(how='any', axis=0)
     df_test = df_test.dropna(how='any', axis=0)
 
+    # 把年收入50k的设置为1
     df_train[LABEL_COLUMN] = (
         df_train["income_bracket"].apply(lambda x: ">50K" in x)).astype(int)
     df_test[LABEL_COLUMN] = (
         df_test["income_bracket"].apply(lambda x: ">50K" in x)).astype(int)
 
+    # 模型地址
     model_dir = tempfile.mkdtemp() if not model_dir else model_dir
     print("model directory = %s" % model_dir)
-
     m = build_estimator(model_dir, model_type)
+    # 输入的数据格式化
     m.fit(input_fn=lambda: input_fn(df_train), steps=train_steps)
+    # 结果评估
     results = m.evaluate(input_fn=lambda: input_fn(df_test), steps=1)
     for key in sorted(results):
         print("%s: %s" % (key, results[key]))
