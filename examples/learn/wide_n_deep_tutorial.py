@@ -47,9 +47,11 @@ COLUMNS = ["age", "workclass", "fnlwgt", "education", "education_num",
            "income_bracket"]
 LABEL_COLUMN = "label"
 # 分类属性名
+# 工作类型、教育水平、婚姻状况、个人职业、关系、种族、性别、个人的原籍国
 CATEGORICAL_COLUMNS = ["workclass", "education", "marital_status", "occupation",
                        "relationship", "race", "gender", "native_country"]
 # 线性属性名
+# 年龄、数字化的教育水平、资本收益记录、资本损失记录、每周工作小时
 CONTINUOUS_COLUMNS = ["age", "education_num", "capital_gain", "capital_loss",
                       "hours_per_week"]
 
@@ -118,14 +120,14 @@ def build_estimator(model_dir, model_type):
     hours_per_week = tf.contrib.layers.real_valued_column("hours_per_week")
 
     # 为了更好的学习规律，收入是与年龄阶段有关的，因此需要把连续的数值划分
-    # 成一段一段的区间来表示收入
+    # 成一段一段的区间来表示收入（桶化）
     age_buckets = tf.contrib.layers.bucketized_column(age,
                                                       boundaries=[
                                                           18, 25, 30, 35, 40, 45,
                                                           50, 55, 60, 65
                                                       ])
 
-    # 广度的列 放置分类特征
+    # 广度的列 放置分类特征、交叉特征和桶化后的连续特征
     wide_columns = [gender, native_country, education, occupation, workclass,
                     relationship, age_buckets,
                     tf.contrib.layers.crossed_column([education, occupation],
@@ -135,7 +137,7 @@ def build_estimator(model_dir, model_type):
                         hash_bucket_size=int(1e6)),
                     tf.contrib.layers.crossed_column([native_country, occupation],
                                                      hash_bucket_size=int(1e4))]
-    # 深度的列 放置分类特征转化后密集嵌入的特征和连续特征
+    # 深度的列 放置连续特征和分类特征转化后密集嵌入的特征
     deep_columns = [
         tf.contrib.layers.embedding_column(workclass, dimension=8),
         tf.contrib.layers.embedding_column(education, dimension=8),
