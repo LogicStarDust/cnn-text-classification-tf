@@ -91,6 +91,7 @@ def build_estimator(model_dir, model_type):
         "historyOneItemId", hash_bucket_size=10000)
     historyTwoItemId = tf.contrib.layers.sparse_column_with_hash_bucket(
         "historyTwoItemId", hash_bucket_size=10000)
+
     # Continuous base columns. 基础连续列
     price = tf.contrib.layers.real_valued_column("price")
     dayOnWeek_c = tf.contrib.layers.real_valued_column("dayOnWeek")
@@ -199,7 +200,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--train_steps",
         type=int,
-        default=500,
+        default=1000,
         help="Number of training steps."
     )
     parser.add_argument(
