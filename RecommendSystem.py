@@ -8,12 +8,14 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import os
 import sys
 import tempfile
 
 import tensorflow as tf
 from pandas import DataFrame
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # 所有列名
 COLUMNS = ["user_id", "itemId", "price", "provinces", "itemType",
            "historyItems", "hourOnDay", "dayOnWeek", "dayOnMonth", "searchWord",
@@ -125,7 +127,7 @@ def build_estimator(model_dir, model_type):
                                            feature_columns=deep_columns,
                                            hidden_units=[100, 50])
     else:
-        m = tf.contrib.learn.DNNLinearCombinedClassifier(
+        m = tf.contrib.learn.DNNLinearCombinedRegressor(
             model_dir=model_dir,
             linear_feature_columns=wide_columns,
             dnn_feature_columns=deep_columns,
@@ -134,16 +136,23 @@ def build_estimator(model_dir, model_type):
     return m
 
 
+def get_label(string):
+    if "consume" in string:
+        return 1
+    else:
+        return 0
+
+
 def train_and_eval(model_dir, model_type, train_steps):
     # 读取训练和测试数据
     # f = open(os.path.abspath("data/my/user_b"), "r", encoding="utf-8")
-    lines_train = open("F:/train", "r", encoding="utf-8").readlines()
-    lines_test = open("F:/test", "r", encoding="utf-8").readlines()
-    train = DataFrame(list(map(lambda line: (line + "$$1").split("$$"), lines_train)), columns=COLUMNS)
-    test = DataFrame(list(map(lambda line: (line + "$$1").split("$$"), lines_test)), columns=COLUMNS)
+    lines_train = open("F:/20170808/part", "r", encoding="utf-8").readlines()
+    lines_test = open("F:/20170809/part", "r", encoding="utf-8").readlines()
+    train = DataFrame(list(map(lambda line: line.split("$$", -1), lines_train)), columns=COLUMNS)
+    test = DataFrame(list(map(lambda line: line.split("$$", -1), lines_test)), columns=COLUMNS)
     # 把1 设置为1
-    train[LABEL_COLUMN] = (train["label_s"].apply(lambda x: "1" in x)).astype(int)
-    test[LABEL_COLUMN] = (test["label_s"].apply(lambda x: "1" in x)).astype(int)
+    train[LABEL_COLUMN] = train["label_s"].apply(get_label)
+    test[LABEL_COLUMN] = test["label_s"].apply(get_label)
 
     def f(p):
         if p == "null":
@@ -190,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--train_steps",
         type=int,
-        default=200,
+        default=500,
         help="Number of training steps."
     )
     parser.add_argument(
