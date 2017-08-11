@@ -13,9 +13,8 @@ COLUMNS = ["user_id", "itemId", "price", "provinces", "itemType",
 # 标志位列名
 LABEL_COLUMN = "label"
 # 分类特征列名
-CATEGORICAL_COLUMNS = ["user_id", "itemId", "provinces", "itemType",
-                       "historyItems", "hourOnDay", "dayOnWeek", "dayOnMonth", "searchWord",
-                       "historyOneItemId", "historyTwoItemId"]
+CATEGORICAL_COLUMNS = ["user_id", "itemId", "provinces", "itemType", "historyItems",
+                       "searchWord", "historyOneItemId", "historyTwoItemId"]
 # 连续特征列名
 CONTINUOUS_COLUMNS = ["price", "hourOnDay", "dayOnWeek", "dayOnMonth"]
 
@@ -25,12 +24,13 @@ test = DataFrame(list(map(lambda line: line.split("$$"), lines_test)), columns=C
 
 def f(p):
     if p == "null":
-        return "0.0"
+        return "0"
     else:
         return p
 
 
-test["price"] = (test["price"].apply(lambda x: f(x))).astype(float)
+for col in CONTINUOUS_COLUMNS:
+    test[col] = (test[col].apply(lambda x: f(x))).astype(float)
 test[LABEL_COLUMN] = (test["label_s"].apply(lambda x: "consume" in x)).astype(int)
 m = rs.build_estimator("f:\model", "wide_n_deep")
 # 结果评估
@@ -43,13 +43,14 @@ evalist = list()
 for i in range(len(test) - 1):
     if re[i] > 0.5 and "consume" in test["label_s"][i]:
         evalist.append(2)
+    elif re[i] > 0.5 and "consume" not in test["label_s"][i]:
+        evalist.append(-2)
     elif re[i] < 0.5 and "consume" not in test["label_s"][i]:
         evalist.append(1)
-    elif re[i] > 0.5 and "consume" not in test["label_s"][i]:
-        evalist.append(-1)
     elif re[i] < 0.5 and "consume" in test["label_s"][i]:
-        evalist.append(-2)
+        evalist.append(-1)
     else:
         evalist.append(0)
-print("预测购买实际购买:", evalist.count(1), "\n预测点击实际点击:", evalist.count(2), "\n预测购买实际点击：", evalist.count(-1), "\n预测点击实际购买：", evalist.count(-2), "\nsum:",
+print("预测购买实际购买:", evalist.count(2), "\n预测购买实际点击:", evalist.count(-2), "\n预测点击实际点击：", evalist.count(1), "\n预测点击实际购买：",
+      evalist.count(-1), "\nsum:",
       len(evalist))

@@ -23,9 +23,8 @@ COLUMNS = ["user_id", "itemId", "price", "provinces", "itemType",
 # 标志位列名
 LABEL_COLUMN = "label"
 # 分类特征列名
-CATEGORICAL_COLUMNS = ["user_id", "itemId", "provinces", "itemType",
-                       "historyItems", "hourOnDay", "dayOnWeek", "dayOnMonth", "searchWord",
-                       "historyOneItemId", "historyTwoItemId"]
+CATEGORICAL_COLUMNS = ["user_id", "itemId", "provinces", "itemType", "historyItems",
+                       "searchWord", "historyOneItemId", "historyTwoItemId"]
 # 连续特征列名
 CONTINUOUS_COLUMNS = ["price", "hourOnDay", "dayOnWeek", "dayOnMonth"]
 
@@ -79,25 +78,30 @@ def build_estimator(model_dir, model_type):
         ...
         375 "Masters"
     """
+
+    user_id = tf.contrib.layers.sparse_column_with_hash_bucket(
+        "user_id", hash_bucket_size=1000)
+
     itemId = tf.contrib.layers.sparse_column_with_hash_bucket(
-        "itemId", hash_bucket_size=10000)
+        "itemId", hash_bucket_size=1000)
     provinces = tf.contrib.layers.sparse_column_with_hash_bucket(
-        "provinces", hash_bucket_size=10000)
+        "provinces", hash_bucket_size=1000)
     itemType = tf.contrib.layers.sparse_column_with_hash_bucket(
         "itemType", hash_bucket_size=100)
+    historyItems = tf.contrib.layers.sparse_column_with_hash_bucket(
+        "historyItems", hash_bucket_size=1000)
     searchWord = tf.contrib.layers.sparse_column_with_hash_bucket(
-        "searchWord", hash_bucket_size=10000)
+        "searchWord", hash_bucket_size=1000)
     historyOneItemId = tf.contrib.layers.sparse_column_with_hash_bucket(
-        "historyOneItemId", hash_bucket_size=10000)
+        "historyOneItemId", hash_bucket_size=1000)
     historyTwoItemId = tf.contrib.layers.sparse_column_with_hash_bucket(
-        "historyTwoItemId", hash_bucket_size=10000)
+        "historyTwoItemId", hash_bucket_size=1000)
 
     # Continuous base columns. 基础连续列
     price = tf.contrib.layers.real_valued_column("price")
-    dayOnWeek_c = tf.contrib.layers.real_valued_column("dayOnWeek")
-    hourOnDay_c = tf.contrib.layers.real_valued_column("hourOnDay")
-    dayOnMonth_c = tf.contrib.layers.real_valued_column("dayOnMonth")
-
+    hourOnDay = tf.contrib.layers.real_valued_column("hourOnDay")
+    dayOnWeek = tf.contrib.layers.real_valued_column("dayOnWeek")
+    dayOnMonth = tf.contrib.layers.real_valued_column("dayOnMonth")
     # 为了更好的学习规律，收入是与年龄阶段有关的，因此需要把连续的数值划分
     # 成一段一段的区间来表示收入（桶化）
     price_buckets = tf.contrib.layers.bucketized_column(price,
@@ -107,17 +111,17 @@ def build_estimator(model_dir, model_type):
                                                         ])
 
     # 广度的列 放置分类特征、交叉特征和桶化后的连续特征
-    wide_columns = [itemId, provinces, itemType, price_buckets, searchWord, historyOneItemId,
-                    historyTwoItemId]
+    wide_columns = [user_id, itemId, provinces, itemType, historyItems,
+                    price_buckets, searchWord, historyOneItemId, historyTwoItemId]
     # 深度的列 放置连续特征和分类特征转化后密集嵌入的特征
     deep_columns = [
         tf.contrib.layers.embedding_column(provinces, dimension=8),
         tf.contrib.layers.embedding_column(itemType, dimension=8),
         tf.contrib.layers.embedding_column(searchWord, dimension=8),
-        price
-        # dayOnWeek_c,
-        # hourOnDay_c
-        # dayOnMonth_c
+        price,
+        dayOnWeek,
+        hourOnDay,
+        dayOnMonth
     ]
     # 根据传入的参数决定模型类型，默认混合模型
     if model_type == "wide":
@@ -157,12 +161,13 @@ def train_and_eval(model_dir, model_type, train_steps):
 
     def f(p):
         if p == "null":
-            return "0.0"
+            return "0"
         else:
             return p
 
-    train["price"] = (train["price"].apply(lambda x: f(x))).astype(float)
-    test["price"] = (test["price"].apply(lambda x: f(x))).astype(float)
+    for col in CONTINUOUS_COLUMNS:
+        train[col] = (train[col].apply(lambda x: f(x))).astype(float)
+        test[col] = (test[col].apply(lambda x: f(x))).astype(float)
     # 模型地址
     model_dir = tempfile.mkdtemp() if not model_dir else model_dir
     print("model directory = %s" % model_dir)
@@ -200,7 +205,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--train_steps",
         type=int,
-        default=1000,
+        default=5000,
         help="Number of training steps."
     )
     parser.add_argument(
