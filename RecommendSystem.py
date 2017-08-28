@@ -3,30 +3,30 @@
 #
 #                                  by Wang Guodong
 # =================================================
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import argparse
 import os
 import sys
-import pandas as pd
+import tempfile
+
 import tensorflow as tf
 from pandas import DataFrame
 
-print("脚本的输入的参数为：", sys.argv)
-
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # 所有列名
 COLUMNS = ["user_id", "itemId", "price", "provinces", "itemType",
            "historyItems", "hourOnDay", "dayOnWeek", "dayOnMonth", "searchWord",
-           "historyOneItemId", "historyTwoItemId", "label"]
+           "historyOneItemId", "historyTwoItemId", "label_s"]
 # 标志位列名
-LABEL_COLUMN = ["label"]
+LABEL_COLUMN = "label"
 # 分类特征列名
-CATEGORICAL_COLUMNS = ["user_id", "itemId", "provinces", "itemType",
-                       "historyItems", "hourOnDay", "dayOnWeek", "dayOnMonth", "searchWord",
-                       "historyOneItemId", "historyTwoItemId"]
+CATEGORICAL_COLUMNS = ["user_id", "itemId", "provinces", "itemType", "historyItems",
+                       "searchWord", "historyOneItemId", "historyTwoItemId"]
 # 连续特征列名
 CONTINUOUS_COLUMNS = ["price", "hourOnDay", "dayOnWeek", "dayOnMonth"]
-
-f = open(os.path.abspath("data/my/user_b"), "r", encoding="utf-8")
-lines = f.readlines()
-features = DataFrame(list(map(lambda line: (line + "$$1").split("$$"), lines)), columns=COLUMNS)
 
 
 def input_fn(df):
@@ -65,8 +65,8 @@ def build_estimator(model_dir, model_type):
     # Sparse base columns.基础稀疏列
     # 创建稀疏的列. 列表中的每一个键将会获得一个从 0 开始的逐渐递增的id
     # 例如 下面这句female 为 0，male为1。这种情况是已经事先知道列集合中的元素
-    gender = tf.contrib.layers.sparse_column_with_keys(column_name="gender",
-                                                       keys=["female", "male"])
+    # gender = tf.contrib.layers.sparse_column_with_keys(column_name="gender",
+    #                                                    keys=["female", "male"])
     # 对于不知道列集合中元素有那些的情况时，可以用下面这种。
     # 例如教育列中的每个值将会被散列为一个整数id
     # 例如
@@ -78,56 +78,50 @@ def build_estimator(model_dir, model_type):
         ...
         375 "Masters"
     """
-    education = tf.contrib.layers.sparse_column_with_hash_bucket(
-        "education", hash_bucket_size=1000)
-    relationship = tf.contrib.layers.sparse_column_with_hash_bucket(
-        "relationship", hash_bucket_size=100)
-    workclass = tf.contrib.layers.sparse_column_with_hash_bucket(
-        "workclass", hash_bucket_size=100)
-    occupation = tf.contrib.layers.sparse_column_with_hash_bucket(
-        "occupation", hash_bucket_size=1000)
-    native_country = tf.contrib.layers.sparse_column_with_hash_bucket(
-        "native_country", hash_bucket_size=1000)
+
+    user_id = tf.contrib.layers.sparse_column_with_hash_bucket(
+        "user_id", hash_bucket_size=1000)
+
+    itemId = tf.contrib.layers.sparse_column_with_hash_bucket(
+        "itemId", hash_bucket_size=1000)
+    provinces = tf.contrib.layers.sparse_column_with_hash_bucket(
+        "provinces", hash_bucket_size=1000)
+    itemType = tf.contrib.layers.sparse_column_with_hash_bucket(
+        "itemType", hash_bucket_size=100)
+    historyItems = tf.contrib.layers.sparse_column_with_hash_bucket(
+        "historyItems", hash_bucket_size=1000)
+    searchWord = tf.contrib.layers.sparse_column_with_hash_bucket(
+        "searchWord", hash_bucket_size=1000)
+    historyOneItemId = tf.contrib.layers.sparse_column_with_hash_bucket(
+        "historyOneItemId", hash_bucket_size=1000)
+    historyTwoItemId = tf.contrib.layers.sparse_column_with_hash_bucket(
+        "historyTwoItemId", hash_bucket_size=1000)
 
     # Continuous base columns. 基础连续列
-    age = tf.contrib.layers.real_valued_column("age")
-    education_num = tf.contrib.layers.real_valued_column("education_num")
-    capital_gain = tf.contrib.layers.real_valued_column("capital_gain")
-    capital_loss = tf.contrib.layers.real_valued_column("capital_loss")
-    hours_per_week = tf.contrib.layers.real_valued_column("hours_per_week")
-
+    price = tf.contrib.layers.real_valued_column("price")
+    hourOnDay = tf.contrib.layers.real_valued_column("hourOnDay")
+    dayOnWeek = tf.contrib.layers.real_valued_column("dayOnWeek")
+    dayOnMonth = tf.contrib.layers.real_valued_column("dayOnMonth")
     # 为了更好的学习规律，收入是与年龄阶段有关的，因此需要把连续的数值划分
     # 成一段一段的区间来表示收入（桶化）
-    age_buckets = tf.contrib.layers.bucketized_column(age,
-                                                      boundaries=[
-                                                          18, 25, 30, 35, 40, 45,
-                                                          50, 55, 60, 65
-                                                      ])
+    price_buckets = tf.contrib.layers.bucketized_column(price,
+                                                        boundaries=[
+                                                            50, 100, 300, 500, 1000, 2000,
+                                                            3000, 5000, 6000
+                                                        ])
 
     # 广度的列 放置分类特征、交叉特征和桶化后的连续特征
-    wide_columns = [gender, native_country, education, occupation, workclass,
-                    relationship, age_buckets,
-                    tf.contrib.layers.crossed_column([education, occupation],
-                                                     hash_bucket_size=int(1e4)),
-                    tf.contrib.layers.crossed_column(
-                        [age_buckets, education, occupation],
-                        hash_bucket_size=int(1e6)),
-                    tf.contrib.layers.crossed_column([native_country, occupation],
-                                                     hash_bucket_size=int(1e4))]
+    wide_columns = [user_id, itemId, provinces, itemType, historyItems,
+                    price_buckets, searchWord, historyOneItemId, historyTwoItemId]
     # 深度的列 放置连续特征和分类特征转化后密集嵌入的特征
     deep_columns = [
-        tf.contrib.layers.embedding_column(workclass, dimension=8),
-        tf.contrib.layers.embedding_column(education, dimension=8),
-        tf.contrib.layers.embedding_column(gender, dimension=8),
-        tf.contrib.layers.embedding_column(relationship, dimension=8),
-        tf.contrib.layers.embedding_column(native_country,
-                                           dimension=8),
-        tf.contrib.layers.embedding_column(occupation, dimension=8),
-        age,
-        education_num,
-        capital_gain,
-        capital_loss,
-        hours_per_week,
+        tf.contrib.layers.embedding_column(provinces, dimension=8),
+        tf.contrib.layers.embedding_column(itemType, dimension=8),
+        tf.contrib.layers.embedding_column(searchWord, dimension=8),
+        price,
+        dayOnWeek,
+        hourOnDay,
+        dayOnMonth
     ]
     # 根据传入的参数决定模型类型，默认混合模型
     if model_type == "wide":
@@ -138,7 +132,7 @@ def build_estimator(model_dir, model_type):
                                            feature_columns=deep_columns,
                                            hidden_units=[100, 50])
     else:
-        m = tf.contrib.learn.DNNLinearCombinedClassifier(
+        m = tf.contrib.learn.DNNLinearCombinedRegressor(
             model_dir=model_dir,
             linear_feature_columns=wide_columns,
             dnn_feature_columns=deep_columns,
@@ -147,4 +141,84 @@ def build_estimator(model_dir, model_type):
     return m
 
 
-input_fn(features)
+def get_label(string):
+    if "consume" in string:
+        return 1
+    else:
+        return 0
+
+
+def train_and_eval(model_dir, model_type, train_steps):
+    # 读取训练和测试数据
+    # f = open(os.path.abspath("data/my/user_b"), "r", encoding="utf-8")
+    lines_train = open("F:/20170808/part", "r", encoding="utf-8").readlines()
+    lines_test = open("F:/20170809/part", "r", encoding="utf-8").readlines()
+    train = DataFrame(list(map(lambda line: line.split("$$", -1), lines_train)), columns=COLUMNS)
+    test = DataFrame(list(map(lambda line: line.split("$$", -1), lines_test)), columns=COLUMNS)
+    # 把1 设置为1
+    train[LABEL_COLUMN] = train["label_s"].apply(get_label)
+    test[LABEL_COLUMN] = test["label_s"].apply(get_label)
+
+    def f(p):
+        if p == "null":
+            return "0"
+        else:
+            return p
+
+    for col in CONTINUOUS_COLUMNS:
+        train[col] = (train[col].apply(lambda x: f(x))).astype(float)
+        test[col] = (test[col].apply(lambda x: f(x))).astype(float)
+    # 模型地址
+    model_dir = tempfile.mkdtemp() if not model_dir else model_dir
+    print("model directory = %s" % model_dir)
+    m = build_estimator(model_dir, model_type)
+    # 输入的数据格式化
+    m.fit(input_fn=lambda: input_fn(train), steps=train_steps)
+    # 结果评估
+    results = m.evaluate(input_fn=lambda: input_fn(test), steps=1)
+    for key in sorted(results):
+        print("%s: %s" % (key, results[key]))
+
+
+FLAGS = None
+
+
+def main(_):
+    train_and_eval(FLAGS.model_dir, FLAGS.model_type, FLAGS.train_steps)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.register("type", "bool", lambda v: v.lower() == "true")
+    parser.add_argument(
+        "--model_dir",
+        type=str,
+        default="",
+        help="Base directory for output models."
+    )
+    parser.add_argument(
+        "--model_type",
+        type=str,
+        default="wide_n_deep",
+        help="Valid model types: {'wide', 'deep', 'wide_n_deep'}."
+    )
+    parser.add_argument(
+        "--train_steps",
+        type=int,
+        default=5000,
+        help="Number of training steps."
+    )
+    parser.add_argument(
+        "--train_data",
+        type=str,
+        default="",
+        help="Path to the training data."
+    )
+    parser.add_argument(
+        "--test_data",
+        type=str,
+        default="",
+        help="Path to the test data."
+    )
+    FLAGS, unparsed = parser.parse_known_args()
+    tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)
