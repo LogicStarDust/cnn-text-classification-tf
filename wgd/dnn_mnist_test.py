@@ -10,7 +10,5 @@ num_train, num_feats = mnist.train.images.shape
 num_test = mnist.test.images.shape[0]
 num_classes = mnist.train.labels.shape[1]
 
-print(type(mnist))
-print(type(mnist.train.images.shape))
-print(type(num_train))
-print(type(num_feats))
+print(num_test)
+print(num_classes)

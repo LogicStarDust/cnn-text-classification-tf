@@ -12,11 +12,15 @@ from tensorflow.examples.tutorials.mnist import input_data
 # 加载MNIST数据集合
 mnist = input_data.read_data_sets("mnist/", one_hot=True)
 
+# 训练样本数量和特征数量
 num_train, num_feats = mnist.train.images.shape
+# 测试样本数量
 num_test = mnist.test.images.shape[0]
+# 类别数量
 num_classes = mnist.train.labels.shape[1]
 
 # Set hyperparameters of MLP.
+# 为多层神经网络设置超参数，分别是：随机种子、批次大小、lr、隐藏层数量、num_epochs
 rseed = 42
 batch_size = 200
 lr = 1e-1
@@ -24,12 +28,15 @@ num_hiddens = 500
 num_epochs = 20
 
 # Initialize model parameters, sample W ~ [-U, U], where U = sqrt(6.0 / (fan_in + fan_out)).
+# 初始化模型参数，
 np.random.seed(rseed)
 # Your code here to create model parameters globally.
+# 建立全局模型参数
 
 
 
 # Used to store the gradients of model parameters.
+# 用于存储模型参数的梯度
 dw1 = np.zeros((num_feats, num_hiddens))
 db1 = np.zeros(num_hiddens)
 dw2 = np.zeros((num_hiddens, num_classes))
