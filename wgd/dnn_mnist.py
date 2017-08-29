@@ -99,20 +99,25 @@ train_accs, valid_accs = [], []
 for i in range(num_epochs):
     for j in range(num_batches):
         # Fetch the j-th mini-batch of the data.
+        # 分割数据
         insts = mnist.train.images[batch_size * j: batch_size * (j + 1), :]
         labels = mnist.train.labels[batch_size * j: batch_size * (j + 1), :]
         # Forward propagation.
+        # 前向传播
         # Your code here.
 
         # Backward propagation.
+        # 反向传播
         # Your code here.
 
         # Gradient update.
+        # 梯度更新
         w1 -= lr * dw1
         w2 -= lr * dw2
         b1 -= lr * db1
         b2 -= lr * db2
     # Evaluate on both training and validation set.
+    # 执行完一个批次，在训练和验证集合评估数据
     train_acc = evaluate(mnist.train.images, mnist.train.labels)
     valid_acc = evaluate(mnist.validation.images, mnist.validation.labels)
     train_accs.append(train_acc)
@@ -123,12 +128,13 @@ for i in range(num_epochs):
 time_end = time.time()
 # Compute test set accuracy.
 acc = evaluate(mnist.test.images, mnist.test.labels)
-print
-"Final classification accuracy on test set = {}".format(acc)
-print
-"Time used to train the model: {} seconds.".format(time_end - time_start)
+print("Final classification accuracy on test set = {}".format(acc))
+
+print("Time used to train the model: {} seconds.".format(time_end - time_start))
+
 
 # Plot classification accuracy on both training and validation set for better visualization.
+# 在训练和验证集合上的分类精度，以便更好地进行可视化。
 plt.figure()
 plt.plot(train_accs, "bo-", linewidth=2)
 plt.plot(valid_accs, "go-", linewidth=2)
