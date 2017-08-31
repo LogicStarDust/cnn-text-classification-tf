@@ -10,5 +10,14 @@ num_train, num_feats = mnist.train.images.shape
 num_test = mnist.test.images.shape[0]
 num_classes = mnist.train.labels.shape[1]
 
-print(num_test)
-print(num_classes)
+batch_size = 200
+j = 1
+insts = mnist.train.images[batch_size * j: batch_size * (j + 1), :]
+labels = mnist.train.labels[batch_size * j: batch_size * (j + 1), :]
+
+array = [1, 2]
+print(array)
+sum = np.exp(array)
+print(sum.sum(axis=1))
+s = np.sum(sum, axis=1)
+print(s)
