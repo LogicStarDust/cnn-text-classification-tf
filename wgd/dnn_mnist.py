@@ -31,10 +31,12 @@ num_epochs = 20
 # 初始化模型参数，
 np.random.seed(rseed)
 u = np.sqrt(6.0 / (num_feats + num_hiddens))
-w1 = np.random.random(num_feats, num_hiddens)
-b1 = np.zeros(num_hiddens)
-w2 = np.random.random(num_hiddens, num_classes)
-b2 = np.zeros(num_classes)
+w1 = (np.random.rand(num_feats, num_hiddens)-0.5)*u
+b1 = (np.zeros(num_hiddens)-0.5)*u
+
+u = np.sqrt(6.0 / (num_hiddens + num_classes))
+w2 = (np.random.rand(num_hiddens, num_classes)-0.5)*u
+b2 = (np.zeros(num_classes)-0.5)*u
 # Your code here to create model parameters globally.
 # 建立全局模型参数
 # Used to store the gradients of model parameters.
@@ -55,7 +57,8 @@ def ReLU(inputs):
     """
     # Your code here.
     # 返回向量中每个元素，负数将被置为0
-    return np.maximum(insts, 0)
+    inputs[inputs<0.0]=0.0
+    return inputs
 
 
 def softmax(inputs):
@@ -91,7 +94,14 @@ def backward(probs, labels, x, h1, h2):
     Backward propagation of errors.
     """
     # Your code here.
-    pass
+    n = probs.shape[0]
+    e2 = probs - labels
+    e1 = np.dot(e2, w2.T)
+    e1[h1 < 0.0] = 0.0
+    dw2[:] = np.dot(h1.T, e2) / n
+    db2[:] = np.mean(e2, axis=0)
+    dw1[:] = np.dot(x.T, e1) / n
+    db1[:] = np.mean(e1, axis=0)
 
 
 def predict(probs):
@@ -115,7 +125,7 @@ def evaluate(inputs, labels):
 
 # Training using stochastic gradient descent.
 time_start = time.time()
-num_batches = num_train / batch_size
+num_batches = int(num_train / batch_size)
 train_accs, valid_accs = [], []
 for i in range(num_epochs):
     for j in range(num_batches):
@@ -130,7 +140,7 @@ for i in range(num_epochs):
         # Backward propagation.
         # 反向传播
         # Your code here.
-        backward(probs, labels, (insts, h1, h2))
+        backward(probs, labels, insts, h1, h2)
         # Gradient update.
         # 梯度更新
         w1 -= lr * dw1
