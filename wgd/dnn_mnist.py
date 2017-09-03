@@ -94,9 +94,15 @@ def backward(probs, labels, x, h1, h2):
     Backward propagation of errors.
     """
     # Your code here.
+    # 获取结果矩阵的行数,即结果的数量,probs:n*10
     n = probs.shape[0]
+    # 预测结果矩阵减去真实结果矩阵
     e2 = probs - labels
+    # 用预测与真实差值矩阵乘以第二层权重矩阵转置n*10 dot 10*500 =n*500
     e1 = np.dot(e2, w2.T)
+    # 把e1的对应
+    #   前向传播过程中第一层神经元输出数值小于0的神经元
+    # 的输出置为0
     e1[h1 < 0.0] = 0.0
     dw2[:] = np.dot(h1.T, e2) / n
     db2[:] = np.mean(e2, axis=0)

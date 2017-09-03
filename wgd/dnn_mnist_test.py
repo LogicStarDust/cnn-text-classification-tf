@@ -15,9 +15,6 @@ j = 1
 insts = mnist.train.images[batch_size * j: batch_size * (j + 1), :]
 labels = mnist.train.labels[batch_size * j: batch_size * (j + 1), :]
 
-array = [1, 2]
-print(array)
-sum = np.exp(array)
-print(sum.sum(axis=1))
-s = np.sum(sum, axis=1)
-print(s)
+print(insts.shape)
+print(insts.shape[0])
+print(labels.shape)
