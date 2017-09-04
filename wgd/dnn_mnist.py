@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 # Author: Ivan
 # Date: 2017-08-26
-import argparse
 import time
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
 
 # Load the MNIST dataset from the official website.
@@ -31,12 +31,12 @@ num_epochs = 20
 # 初始化模型参数，
 np.random.seed(rseed)
 u = np.sqrt(6.0 / (num_feats + num_hiddens))
-w1 = (np.random.rand(num_feats, num_hiddens)-0.5)*u
-b1 = (np.zeros(num_hiddens)-0.5)*u
+w1 = (np.random.rand(num_feats, num_hiddens) - 0.5) * u
+b1 = (np.zeros(num_hiddens) - 0.5) * u
 
 u = np.sqrt(6.0 / (num_hiddens + num_classes))
-w2 = (np.random.rand(num_hiddens, num_classes)-0.5)*u
-b2 = (np.zeros(num_classes)-0.5)*u
+w2 = (np.random.rand(num_hiddens, num_classes) - 0.5) * u
+b2 = (np.zeros(num_classes) - 0.5) * u
 # Your code here to create model parameters globally.
 # 建立全局模型参数
 # Used to store the gradients of model parameters.
@@ -57,8 +57,8 @@ def ReLU(inputs):
     """
     # Your code here.
     # 返回向量中每个元素，负数将被置为0
-    inputs[inputs<0.0]=0.0
-    return inputs
+
+    return np.maximum(inputs, 0)
 
 
 def softmax(inputs):
@@ -105,13 +105,17 @@ def backward(probs, labels, x, h1, h2):
     # 的输出置为0
     e1[h1 < 0.0] = 0.0
     # 第二层权重的偏导为第一层神经元的输出转置乘以第二层输出的偏导数
-    dw2[:] = np.dot(h1.T, e2) / n
+    global dw2
+    dw2 = np.dot(h1.T, e2) / n
     # 第二层偏置项的偏导数为第二层输出偏导数的平均值
-    db2[:] = np.mean(e2, axis=0)
+    global db2
+    db2 = np.mean(e2, axis=0)
     # 第一层权重的偏导数为输入层转置乘以第一层输出的偏导数
-    dw1[:] = np.dot(x.T, e1) / n
+    global dw1
+    dw1 = np.dot(x.T, e1) / n
     # 第一层的偏置项为第一层输出的偏导数的平均值
-    db1[:] = np.mean(e1, axis=0)
+    global db1
+    db1 = np.mean(e1, axis=0)
 
 
 def predict(probs):
